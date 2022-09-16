@@ -1,0 +1,21 @@
+{
+    "name": "pauloak/nfse-lajeado",
+    "description": "Package used to create NFSE on Lajeado city.",
+    "type": "library",
+    "require": {
+        "php": ">=7",
+        "guzzlehttp/guzzle": "^7.5"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "PauloAK\\NfseLajeado\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Paulo Kramer",
+            "email": "paulo_kramer@hotmail.com"
+        }
+    ]
+}
