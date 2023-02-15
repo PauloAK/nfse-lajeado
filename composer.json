@@ -6,7 +6,11 @@
         "php": ">=7",
         "guzzlehttp/guzzle": "^7.5",
         "spatie/array-to-xml": "^3.1",
-        "nfephp-org/sped-common": "^5.1"
+        "nfephp-org/sped-common": "^5.1",
+        "ext-dom": "*",
+        "ext-soap": "*",
+        "ext-openssl": "*",
+        "ext-mbstring": "*"
     },
     "license": "MIT",
     "autoload": {
