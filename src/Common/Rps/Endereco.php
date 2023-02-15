@@ -1,17 +1,17 @@
 <?php
 
-namespace PauloAK\NfseLajeado\Envio\Rps;
+namespace PauloAK\NfseLajeado\Common\Rps;
 
 use PauloAK\NfseLajeado\Helpers\Utils;
 
 class Endereco {
-    private string $rua;
-    private string $numero;
-    private string $complemento;
-    private string $bairro;
-    private string $codigoMunicipio;
-    private string $uf;
-    private string $cep;
+    private $rua = null;
+    private $numero = null;
+    private $complemento = null;
+    private $bairro = null;
+    private $codigoMunicipio = null;
+    private $uf = null;
+    private $cep = null;
 
     public function rua($rua)
     {
@@ -53,5 +53,18 @@ class Endereco {
     {
         $this->cep = Utils::onlyNumbers($cep);
         return $this;
+    }
+
+    public function toArray(): array
+    {
+        return array_filter([
+            'Endereco' => $this->rua,
+            'Numero' => $this->numero,
+            'Complemento' => $this->complemento,
+            'Bairro' => $this->bairro,
+            'CodigoMunicipio' => $this->codigoMunicipio,
+            'Uf' => $this->uf,
+            'Cep' => $this->cep,
+        ]);
     }
 }

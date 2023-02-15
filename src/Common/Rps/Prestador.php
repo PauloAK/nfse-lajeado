@@ -1,6 +1,6 @@
 <?php
 
-namespace PauloAK\NfseLajeado\Envio\Rps;
+namespace PauloAK\NfseLajeado\Common\Rps;
 
 use PauloAK\NfseLajeado\Helpers\Utils;
 
@@ -18,5 +18,13 @@ class Prestador {
     {
         $this->im = $im;
         return $this;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'Cnpj' => $this->cnpj,
+            'InscricaoMunicipal' => $this->im,
+        ];
     }
 }

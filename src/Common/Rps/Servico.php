@@ -1,27 +1,27 @@
 <?php
 
-namespace PauloAK\NfseLajeado\Envio\Rps;
+namespace PauloAK\NfseLajeado\Common\Rps;
 
 class Servico {
-    private string $valorServicos;
-    private string $valorDeducoes;
-    private string $valorPis;
-    private string $valorCofins;
-    private string $valorInss;
-    private string $valorIr;
-    private string $valorCsll;
-    private string $issRetido;
-    private string $valorIss;
-    private string $outrasRetencoes;
-    private string $baseCalculo;
-    private string $aliquota;
-    private string $valorLiquidoNfse;
-    private string $descontoIncondicionado;
-    private string $descontoCondicionado;
-    private string $itemListaServico;
-    private string $codigoCnae;
-    private string $discriminacao;
-    private string $codigoMunicipio;
+    private ?string $valorServicos = null;
+    private ?string $valorDeducoes = null;
+    private ?string $valorPis = null;
+    private ?string $valorCofins = null;
+    private ?string $valorInss = null;
+    private ?string $valorIr = null;
+    private ?string $valorCsll = null;
+    private ?string $issRetido = null;
+    private ?string $valorIss = null;
+    private ?string $outrasRetencoes = null;
+    private ?string $baseCalculo = null;
+    private ?string $aliquota = null;
+    private ?string $valorLiquidoNfse = null;
+    private ?string $descontoIncondicionado = null;
+    private ?string $descontoCondicionado = null;
+    private ?string $itemListaServico = null;
+    private ?string $codigoCnae = null;
+    private ?string $discriminacao = null;
+    private ?string $codigoMunicipio = '4311403';
 
     public function valorServicos($valorServicos)
     {
@@ -135,5 +135,32 @@ class Servico {
     {
         $this->codigoMunicipio = $codigoMunicipio;
         return $this;
+    }
+
+    public function toArray(): array
+    {
+        return array_filter([
+            'Valores' => array_filter([
+                'ValorServicos' => $this->valorServicos,
+                'ValorDeducoes' => $this->valorDeducoes,
+                'ValorPis' => $this->valorPis,
+                'ValorCofins' => $this->valorCofins,
+                'ValorInss' => $this->valorInss,
+                'ValorIr' => $this->valorIr,
+                'ValorCsll' => $this->valorCsll,
+                'IssRetido' => $this->issRetido,
+                'ValorIss' => $this->valorIss,
+                'OutrasRetencoes' => $this->outrasRetencoes,
+                'BaseCalculo' => $this->baseCalculo ?: $this->valorServicos,
+                'Aliquota' => $this->aliquota,
+                'ValorLiquidoNfse' => $this->valorLiquidoNfse ?: $this->valorServicos,
+                'DescontoIncondicionado' => $this->descontoIncondicionado,
+                'DescontoCondicionado' => $this->descontoCondicionado,
+            ]),
+            'ItemListaServico' => $this->itemListaServico,
+            'CodigoCnae' => $this->codigoCnae,
+            'Discriminacao' => $this->discriminacao,
+            'CodigoMunicipio' => $this->codigoMunicipio,
+        ]);
     }
 }
