@@ -5,6 +5,7 @@ namespace PauloAK\NfseLajeado;
 use DOMDocument;
 use Exception;
 use PauloAK\NfseLajeado\Common\Rps;
+use PauloAK\NfseLajeado\Helpers\Response;
 use PauloAK\NfseLajeado\Helpers\Signer;
 use PauloAK\NfseLajeado\Helpers\Utils;
 use Spatie\ArrayToXml\ArrayToXml;
@@ -72,9 +73,9 @@ class EnviarLoteRpsEnvio
     /**
      * Sends the RPS to the Lajeado's NFSe homologation server
      * 
-     * @return string An array with the protocol number, the next Lote and RPS number
+     * @return Response
      */
-    public function sendHml(): array
+    public function sendHml(): Response
     {
         return $this->send(true);
     }
@@ -84,9 +85,9 @@ class EnviarLoteRpsEnvio
      * 
      * @param bool $isHml If true, sends to the homologation server (default: false)
      * 
-     * @return array An array with the protocol number, the next Lote and RPS number
+     * @return Response
      */
-    public function send($isHml = false): array
+    public function send($isHml = false): Response
     {
         $client = Utils::getSoapClient('NFSEremessa', $isHml);
 
@@ -95,45 +96,56 @@ class EnviarLoteRpsEnvio
         $signer = new Signer($this->certPath, $this->certPass);
         $signedXml = $signer->sign($xml, 'LoteRps', 'EnviarLoteRpsEnvio');
 
-        $response = $client->RecepcionarLoteRpsLimitado([
+        $wsResponse = $client->RecepcionarLoteRpsLimitado([
             'xml' => $signedXml
         ]);
 
         // Parse response
         $dom = new DOMDocument();
-        $dom->loadXML($response->return);
+        $dom->loadXML($wsResponse->return);
 
-        // OBSERVATION
-        // Auto retry logic to increment the Lote number and RPS number if they are already used
+        $response = (new Response)
+            ->setHml($isHml)
+            ->setRequestXml($signedXml)
+            ->setResponseXml($wsResponse->return);
 
         // Check if there is a error code present
-        $code = $dom->getElementsByTagName('Codigo')->item(0)->nodeValue;
+        $code = Utils::getNodeValue($dom, 'Codigo');
 
+        // Success if no Codigo node is present
+        if (!$code) {
+            $response->setSuccess(true);
+            $response->setData([
+                'nextLoteNumber' => $this->numeroLote + 1,
+                'nextRpsNumber' => $this->rps->numero + 1,
+                'protocolNumber' => Utils::getNodeValue($dom, 'Protocolo')
+            ]);
+
+            return $response;
+        }
+
+
+        // Error Cases
+        // Auto retry logic to increment the Lote number and RPS number if they are already used
+
+        // Lote number already used, increment and try again
         if ($code == 'E500') {
-            // Lote number already used, increment and try again
             $this->numeroLote($this->numeroLote + 1);
             return $this->send($isHml);
         }
 
+        // RPS number already used, remap and try again
         if ($code == 'E10') {
-            // RPS number already used, remap and try again
             $this->rps->numero($this->rps->numero + 1);
             return $this->send($isHml);
         }
 
         // If there is any other error code
-        if ($code) {
-            $message = $dom->getElementsByTagName('Mensagem')->item(0)->nodeValue;
-            throw new Exception($message);
-        }
+        $response->setSuccess(false);
+        $response->setErrorMessage(Utils::getNodeValue($dom, 'Mensagem'));
+        $response->setErrorCode($code);
 
-        $protocol = $dom->getElementsByTagName('Protocolo')->item(0)->nodeValue;
-
-        return [
-            'nextLoteNumber' => $this->numeroLote + 1,
-            'nextRpsNumber' => $this->rps->numero + 1,
-            'protocolNumber' => $protocol
-        ];
+        return $response;
     }
 
     /**

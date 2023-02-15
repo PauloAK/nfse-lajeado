@@ -5,6 +5,7 @@ namespace PauloAK\NfseLajeado;
 use DOMDocument;
 use Exception;
 use PauloAK\NfseLajeado\Common\Rps\Prestador;
+use PauloAK\NfseLajeado\Helpers\Response;
 use PauloAK\NfseLajeado\Helpers\Signer;
 use PauloAK\NfseLajeado\Helpers\Utils;
 use Spatie\ArrayToXml\ArrayToXml;
@@ -80,9 +81,9 @@ class CancelarRps
     /**
      * Sends the RPS to the Lajeado's NFSe homologation server
      * 
-     * @return bool Returns true if canceled
+     * @return Response
      */
-    public function sendHml()
+    public function sendHml(): Response
     {
         return $this->send(true);
     }
@@ -92,9 +93,9 @@ class CancelarRps
      * 
      * @param bool $isHml If true, sends to the homologation server (default: false)
      * 
-     * @return bool Returns true if canceled
+     * @return Response
      */
-    public function send($isHml = false): bool
+    public function send($isHml = false): Response
     {
         $client = Utils::getSoapClient('NFSEcancelamento', $isHml);
 
@@ -103,23 +104,32 @@ class CancelarRps
         $signer = new Signer($this->certPath, $this->certPass);
         $signedXml = $signer->sign($xml, 'InfPedidoCancelamento', 'Pedido');
 
-        $response = $client->cancelarNfse([
+        $wsResponse = $client->cancelarNfse([
             'xml' => $signedXml
         ]);
 
-        var_dump($response);
-        die;
-
         // Parse response
         $dom = new DOMDocument();
-        $dom->loadXML($response->return);
+        $dom->loadXML($wsResponse->return);
 
-        $errorMessage = $dom->getElementsByTagName('Mensagem')->item(0)->nodeValue;
-        if ($errorMessage) {
-            throw new Exception($errorMessage);
+        $response = (new Response)
+            ->setHml($isHml)
+            ->setRequestXml($signedXml)
+            ->setResponseXml($wsResponse->return);
+
+        // Check if there is a error code present
+        $code = Utils::getNodeValue($dom, 'Codigo');
+
+        if (!$code) {
+            $response->setSuccess(true);
+            return $response;
         }
 
-        return true;
+        $response->setSuccess(false);
+        $response->setErrorMessage(Utils::getNodeValue($dom, 'Mensagem'));
+        $response->setErrorCode($code);
+
+        return $response;
     }
 
     /**

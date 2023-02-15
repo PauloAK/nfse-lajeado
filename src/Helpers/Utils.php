@@ -2,6 +2,7 @@
 
 namespace PauloAK\NfseLajeado\Helpers;
 
+use DOMDocument;
 use SoapClient;
 
 class Utils {
@@ -30,5 +31,16 @@ class Utils {
                 ],
             ]),
         ]);
+    }
+
+    public static function getNodeValue(DOMDocument $dom, $elementName, $defaultValue = null)
+    {
+        $nodes = $dom->getElementsByTagName($elementName);
+        
+        if (!$nodes->length) {
+            return $defaultValue;
+        }
+
+        return $nodes->item(0)->nodeValue;
     }
 }

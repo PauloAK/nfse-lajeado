@@ -4,6 +4,7 @@ namespace PauloAK\NfseLajeado;
 
 use DOMDocument;
 use PauloAK\NfseLajeado\Common\Rps\Prestador;
+use PauloAK\NfseLajeado\Helpers\Response;
 use PauloAK\NfseLajeado\Helpers\Utils;
 use Spatie\ArrayToXml\ArrayToXml;
 
@@ -33,9 +34,9 @@ class ConsultarLoteRpsEnvio
     /**
      * Sends the RPS to the Lajeado's NFSe homologation server
      * 
-     * @return string An array with the NFS-e number and verification code
+     * @return Response
      */
-    public function sendHml()
+    public function sendHml(): Response
     {
         return $this->send(true);
     }
@@ -45,27 +46,46 @@ class ConsultarLoteRpsEnvio
      * 
      * @param bool $isHml If true, sends to the homologation server (default: false)
      * 
-     * @return array An array with the NFS-e number and verification code
+     * @return Response
      */
-    public function send($isHml = false)
+    public function send($isHml = false): Response
     {
         $client = Utils::getSoapClient('NFSEconsulta', $isHml);
 
-        $response = $client->consultarLoteRps([
-            'xml' => $this->toXml()
+        $xml = $this->toXml();
+
+        $wsResponse = $client->consultarLoteRps([
+            'xml' => $xml
         ]);
 
         // Parse response
         $dom = new DOMDocument();
-        $dom->loadXML($response->return);
+        $dom->loadXML($wsResponse->return);
 
-        $number = $dom->getElementsByTagName('Numero')->item(0)->nodeValue;
-        $verificationNumber = $dom->getElementsByTagName('CodigoVerificacao')->item(0)->nodeValue;
+        $response = (new Response)
+            ->setHml($isHml)
+            ->setRequestXml($xml)
+            ->setResponseXml($wsResponse->return);
 
-        return [
-            'number' => $number,
-            'verificationNumber' => $verificationNumber
-        ];
+        // Check if there is a error code present
+        $code = Utils::getNodeValue($dom, 'Codigo');
+
+        // Success if no Codigo node is present
+        if (!$code) {
+            $response->setSuccess(true);
+            $response->setData([
+                'number' => Utils::getNodeValue($dom, 'Numero'),
+                'verificationNumber' => Utils::getNodeValue($dom, 'CodigoVerificacao')
+            ]);
+
+            return $response;
+        }
+
+        $response->setSuccess(false);
+        $response->setErrorMessage(Utils::getNodeValue($dom, 'Mensagem'));
+        $response->setErrorCode($code);
+
+        return $response;
     }
 
     /**

@@ -71,23 +71,20 @@ $lote = (new EnviarLoteRpsEnvio(CERTIFICATE_PATH, CERTIFICATE_PASS))
     ->rps($rps);
 
 // Sends to Homologation
-$data = $lote->sendHml();
+$response = $lote->sendHml();
+
+// See Responses section
+if ($response->success) {
+    // ...
+}
 
 // Sends to Production
-// $data = $lote->send();
-```
-
-If your call is successful, you'll receive an array with the next lote number, next rps number and the protocol number to retrieve the NFS-e.
-```php
-$returnedData = [
-    'numeroLote' => 50, // Number - Next lote number, you can store and use in the next NFS-e creation
-    'numeroRps' => 101, // Number - Next rps number, you can store and use in the next NFS-e creation
-    'protocolo' => '000000000' // String - Protocol number to retrieve the NFS-e
-];
+// $response = $lote->send();
 ```
 
 ### Retrieve NFS-e
 _Does NOT need a .pfx certificate_
+
 After you create an NFS-e, you'll receive a protocol number which you can use to retrieve the NFS-e.
 Currently, this package only returns the NFS-e number and the verification code.
 ```php
@@ -103,20 +100,19 @@ $consulta = (new ConsultarLoteRpsEnvio)
     ->protocolo('00000'); // The protocol number returned in the creation call
 
 // Sends to homologation
-$data = $consulta->sendHml();
-```
+$response = $consulta->sendHml();
 
-If your call is successful, you'll receive an array with the NFS-e number and the verification code.
-```php
-$returnedData = [
-    'numero' => 20231, // Number - NFS-e number
-    'codigoVerificacao' = 'ABC12346' // String - Verification code
-];
+// See Responses section
+if ($response->success) {
+    // ...
+}
 ```
 
 ### Cancel NFS-e
 _Needs a .pfx certificate_
+
 To cancel an NFS-e, you'll need the NFS-e number and the certificate.
+
 ```php
 use PauloAK\NfseLajeado\CancelarRps;
 
@@ -129,7 +125,47 @@ $cancelamento = (new CancelarRps(CERTIFICATE_PATH, CERTIFICATE_PASS))
     ->numero('00000');
 
 // Sends to homologation
-$data = $cancelamento->sendHml();
+$response = $cancelamento->sendHml();
+
+// See Responses section
+if ($response->success) {
+    // ...
+}
 ```
 
-If your call is successful it should return `true`.
+### Responses
+All the above requests return a `PauloAK\NfseLajeado\Helpers\Response::class` instance, the object looks like this:
+```php
+(object)[
+    'success' => true, // bool - Boolean representing if the call was successfull
+    'requestXml' => '...', // string - The XML that was sent to the WebService
+    'responseXml' => '...', // string - The response XML returned from the WebService
+    'data' => [], // array - Some quick access data parsed from the request
+    'errorCode' => 'E...', // string - In case of failure, the error code returned
+    'errorMessage' => '...', // string - The detailed error message in case of failure
+    'isHml' => false // bool - Shows in which envioriment the call was made
+];
+```
+
+#### Create Response
+In case of success, the data variable in the response object should look like this:
+```php
+[
+    'nextLoteNumber' => 999, // Last Lote number + 1, you can use it in the next create call
+    'nextRpsNumber' => 999, // Last RPS number + 1, you can use it in the next create call
+    'protocolNumber' => '123456' // Protocol number, you can use it to retrieve the NFS-e
+]
+```
+
+#### Retrieve Response
+In case of success, the data variable in the response object should look like this:
+```php
+[
+    'number' => '20231', // NFS-e number
+    'verificationNumber' => '12346', // NFS-e verification code
+]
+```
+You can see all the other info from the NFS-e XML in `$response->responseXml`;
+
+#### Cancel Response
+The cancel request doesn't return data info in the response, use the `$response->success` variable to check if it was successfully canceled or not.
