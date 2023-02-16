@@ -73,9 +73,15 @@ class ConsultarLoteRpsEnvio
         // Success if no Codigo node is present
         if (!$code) {
             $response->setSuccess(true);
+            $nfseNumber = Utils::getNodeValue($dom, 'Numero');
             $response->setData([
-                'number' => Utils::getNodeValue($dom, 'Numero'),
-                'verificationNumber' => Utils::getNodeValue($dom, 'CodigoVerificacao')
+                'number' => $nfseNumber,
+                'verificationNumber' => Utils::getNodeValue($dom, 'CodigoVerificacao'),
+                'pdfUrl' => sprintf(
+                    "https://grp.lajeado.rs.gov.br/erp/imprimeNfse?numeroNota=%s&numeroProtocolo=%s",
+                    base64_encode($nfseNumber),
+                    base64_encode($this->protocolo)
+                ) // Only works for production NFS-e
             ]);
 
             return $response;

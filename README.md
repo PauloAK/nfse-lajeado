@@ -163,6 +163,7 @@ In case of success, the data variable in the response object should look like th
 [
     'number' => '20231', // NFS-e number
     'verificationNumber' => '12346', // NFS-e verification code
+    'pdfUrl' => 'https://...' // URL to the NFSE PDF document - Only works for production 
 ]
 ```
 You can see all the other info from the NFS-e XML in `$response->responseXml`;
